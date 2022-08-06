@@ -83,7 +83,6 @@ const killedByPlayer = ({
     if (splittedLine[position] === "killed") {
       break;
     }
-
     killer += ` ${splittedLine[position]}`;
   }
   if (!gameData.kills[killer] || typeof gameData.kills[killer] !== "number") {
