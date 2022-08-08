@@ -1,6 +1,5 @@
 # Quake-Log
 
-# Starting
-To install packages running 'yarn install'
+To install packages run 'yarn install'
 
-To start quake log run yarn dev
+To start quake log run 'yarn dev'
