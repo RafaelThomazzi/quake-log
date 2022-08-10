@@ -20,14 +20,11 @@ export const getPlayerName = ({
   line: string;
 }): GameData => {
   const startIndex = line.indexOf("n\\");
-  const endIndex = line.indexOf("\\t") - 1;
-  const playerName = line
-    .trim()
-    .substring(startIndex, endIndex)
-    .replace(/\\/g, "");
+  const endIndex = line.indexOf("\\t");
+  const playerName = removeSpecialCharacters(line, startIndex, endIndex);
 
   if (!gameData.players.includes(playerName)) {
-    gameData.players = [...gameData?.players, playerName];
+    gameData.players.push(playerName)
   }
   return gameData;
 };
@@ -39,17 +36,18 @@ export const processKill = ({
   gameData: GameData;
   splittedLine: string[];
 }): GameData => {
-  gameData.total_kills++;
+  let newGameData = gameData;
+  newGameData.total_kills++;
   const killer = splittedLine[5];
-  gameData = getMeansOfDeath({ gameData, splittedLine });
 
+  newGameData = getMeansOfDeath({ gameData: newGameData, splittedLine });
   if (killer === WORLD_TAG) {
-    gameData = killedByWorld({ gameData, splittedLine });
-    return gameData;
+    newGameData = killedByWorld({ gameData: newGameData, splittedLine });
+    return newGameData;
   }
 
-  gameData = killedByPlayer({ gameData, splittedLine, killer });
-  return gameData;
+  newGameData = killedByPlayer({ gameData: newGameData, splittedLine, killer });
+  return newGameData;
 };
 
 const getMeansOfDeath = ({
@@ -61,12 +59,9 @@ const getMeansOfDeath = ({
 }): GameData => {
   const meansOfDeath = String(splittedLine.at(-1));
 
-  if (typeof gameData.kills_by_means[meansOfDeath] === "number") {
-    gameData.kills_by_means[meansOfDeath]++;
-    return gameData;
-  }
-
-  gameData.kills_by_means[meansOfDeath] = 1;
+  gameData.kills_by_means[meansOfDeath] != undefined
+    ? gameData.kills_by_means[meansOfDeath]++
+    : (gameData.kills_by_means[meansOfDeath] = 1);
   return gameData;
 };
 
@@ -79,17 +74,14 @@ const killedByPlayer = ({
   killer: string;
   splittedLine: string[];
 }): GameData => {
-  for (let position = 6; position < splittedLine.length; position++) {
-    if (splittedLine[position] === "killed") {
-      break;
-    }
+  const killedPosition = splittedLine.indexOf("killed");
+  for (let position = 6; position < killedPosition; position++) {
     killer += ` ${splittedLine[position]}`;
   }
-  if (!gameData.kills[killer] || typeof gameData.kills[killer] !== "number") {
-    gameData.kills[killer] = 0;
-  }
 
-  gameData.kills[killer] = Number(gameData.kills[killer] + 1);
+  gameData.kills[killer] != undefined
+    ? gameData.kills[killer]++
+    : (gameData.kills[killer] = 1);
   return gameData;
 };
 
@@ -101,18 +93,24 @@ const killedByWorld = ({
   gameData: GameData;
 }): GameData => {
   const killedBy = splittedLine.indexOf("killed");
+  const byPosition = splittedLine.indexOf("by");
   let killedPlayer = splittedLine[killedBy + 1];
 
-  for (let position = killedBy + 2; position < splittedLine.length; position++) {
-    if (splittedLine[position] === "by") {
-      break;
-    }
+  for (let position = killedBy + 2; position < byPosition; position++) {
     killedPlayer += ` ${splittedLine[position]}`;
   }
 
-  if (!gameData.kills[killedPlayer] || typeof gameData.kills[killedPlayer] !== "number") {
-    gameData.kills[killedPlayer] = 0;
-  }
-  gameData.kills[killedPlayer] = Number(gameData.kills[killedPlayer] - 1);
+  gameData.kills[killedPlayer] != undefined
+    ? gameData.kills[killedPlayer]--
+    : (gameData.kills[killedPlayer] = -1);
   return gameData;
+};
+
+const removeSpecialCharacters = (line: string, startIndex: number, endIndex: number): string => {
+  const playerName = line
+  .trim()
+  .substring(startIndex, endIndex)
+  .replace('\\t', "").replace('n\\', "").replace('\\', "");
+
+  return playerName.replace('\\', "")
 };
